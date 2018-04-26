@@ -2,8 +2,6 @@
 
 Azure Resource Group Deployment - MultiTier Application Environment
 
-- [Template Features and Pre-requisites](./ADF/ReadMe-DeploymentFeatures.md "AIDF Deployment Features")
-
 	To Deploy all Tiers simply choose the following template
 		
 		0-azuredeploy-ALL.json
