@@ -1,0 +1,319 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "Prefix": {
+      "value": "AZE2"
+    },
+    "Stage": {
+      "value": {
+        "OMS": 1,
+        "NSG": 1,
+        "VNet": 1,
+        "ADPrimary": 1,
+        "ADSecondary": 0,
+        "ILB": 1,
+        "VMApp": 1,
+        "VMSQL": 1,
+        "WAF": 0,
+        "DASHBOARD": 1
+      }
+    },
+    "Extensions": {
+      "value": {
+        "MonitoringAgent": 1,
+        "IaaSDiagnostics": 1,
+        "DSC": 1
+      }
+    },
+    "vmAdminPassword": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/b8f402aa-20f7-4888-b45c-3cf086dad9c3/resourceGroups/rgGlobal/providers/Microsoft.KeyVault/vaults/kvContosoEastUS2"
+        },
+        "secretName": "localadmin"
+      }
+    },
+    "DSCUpdateTagVersion": {
+      "value": "5.0"
+    },
+    "WildcardCertBase64": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/b8f402aa-20f7-4888-b45c-3cf086dad9c3/resourceGroups/rgGlobal/providers/Microsoft.KeyVault/vaults/kvContosoEastUS2"
+        },
+        "secretName": "MultiDomainwildcardBase64"
+      }
+    },
+    "Global": {
+      "value": {
+        "DomainName": "contoso.com",
+        "AppName": "ADF",
+        "NSGGlobal": "AZE2-ADF-nsgDMZ01",
+        "RouteTableGlobal": "AZE2-ADF-rtDMZ01",
+        "SAName": "saeastus2",
+        "KVName": "AZE2-ADF-kvGLOBAL",
+        "KVUrl":"https://kvcontosoeastus2.vault.azure.net/",
+        "RGName": "rgGlobal",
+        "certificateThumbprint": "01358F6DB7F96BD55F1C92B605E2C50AA8C16D15",
+        "vmAdminUserName": "localadmin",
+        "sqlCredentialName":"localadmin",
+        "sqlBackupservicePrincipalSecret":"e1k4UnHY+As+6U4+cAstnAzKv3qmyqA2E7ePbkiHyKc=",
+        "sqlBackupservicePrincipalName":"b7743acb-28da-495d-be2f-4177ce0dc917",
+        "sqlAutobackupRetentionPeriod":5,
+        "networkId": ["10.0.",143],
+        "alertRecipients": [
+          "alerts@contoso.com"
+        ]
+      }
+    },
+    "DeploymentInfo": {
+      "value": {
+        "DC1PrivateIPAddress": "230",
+        "DC2PrivateIPAddress": "231",
+        "DC1HostName": "AD01",
+        "DC2HostName": "AD02",
+        "Comment: SUBNETS":"128 + 64 + 32 + 16 + 16",
+            "SubnetInfo":[
+                {"name":"MT01","prefix":"0/25","NSG":0},
+                {"name":"FE01","prefix":"128/26","NSG":0},
+                {"name":"BE01","prefix":"192/27","NSG":1},
+                {"name":"AD01","prefix":"224/28","NSG":0},
+                {"name":"WAF01","prefix":"240/28","NSG":0}
+            ],
+        "LBInfo": [
+          {
+            "LBName": "PLB01",
+            "ASName": "PLB01",
+            "Sku": "Standard",
+            "PublicIP": "Static",
+            "DirectReturn": false,
+            "FrontEnd": [
+              {
+                "Type": "Public",
+                "LBFEName": "PLB01"
+              }
+            ],
+            "Services": [
+              {
+                "LBFEName": "PLB01",
+                "RuleName": "WSMAN",
+                "LBFEPort": 5985,
+                "LBBEPort": 5985,
+                "LBBEProbePort": 5985
+              }
+            ]
+          },
+          {
+            "LBName": "CLS01",
+            "ASName": "CLS01",
+            "Sku": "Standard",
+            "DirectReturn": true,
+            "FrontEnd": [
+              {
+                "Type": "Private",
+                "LBFEName": "AG01",
+                "LBFEIP": "215",
+                "SNName": "BE01"
+              }
+            ],
+            "Services": [
+              {
+                "LBFEName": "AG01",
+                "RuleName": "AG01",
+                "LBFEPort": 1433,
+                "LBBEPort": 1433,
+                "LBBEProbePort": 59999
+              }
+            ]
+          },
+          {
+            "LBName": "CLS02",
+            "ASName": "CLS02",
+            "Sku": "Standard",
+            "DirectReturn": true,
+            "FrontEnd": [
+              {
+                "Type": "Private",
+                "LBFEName": "AG02",
+                "LBFEIP": "213",
+                "SNName": "BE01"
+              }
+            ],
+            "Services": [
+              {
+                "LBFEName": "AG02",
+                "RuleName": "AG02",
+                "LBFEPort": 1433,
+                "LBBEPort": 1433,
+                "LBBEProbePort": 59999
+              }
+            ]
+          }
+        ],
+        "computeSizeLookupOptions": {
+          "AD-P": "Standard_A2m_v2",
+          "AD-D": "Standard_A2m_v2",
+          "FIL-P": "Standard_DS1",
+          "FIL-D": "Standard_DS1",
+          "JMP-P": "Standard_E8s_v3",
+          "JMP-D": "Standard_E8s_v3",
+          "PROXYRHEL-P": "Standard_E8s_v3",
+          "PROXYRHEL-D": "Standard_E8s_v3",
+          "CLS01-D": "Standard_DS13_v2",
+          "CLS02-D": "Standard_DS13_v2"
+        },
+        "Appservers": {
+          "ADPrimaryAS": [
+            "AD"
+          ],
+          "ADSecondaryAS": [
+            "AD"
+          ],
+          "APPServersAS": [
+            "JMP"
+          ],
+          "ADPrimary": [
+            {
+              "VMName": "AD01",
+              "Role": "ADp",
+              "ASName": "AD",
+              "Subnet": "AD01",
+              "DDRole": "127GB",
+              "StaticIP": "230",
+              "Zone": 0,
+              "ExcludeDomainJoin":"isDomainController"
+            }
+          ],
+          "ADSecondary": [
+            {
+              "VMName": "AD02",
+              "Role": "ADs",
+              "ASName": "AD",
+              "Subnet": "AD01",
+              "DDRole": "127GB",
+              "StaticIP": "231",
+              "Zone": 0,
+              "ExcludeDomainJoin":"isDomainController"
+            }
+          ],
+          "AppServers": [
+            {
+              "VMName": "JMP01",
+              "Role": "JMP",
+              "ASName": "JMP",
+              "Subnet": "FE01",
+              "DDRole": "127GB",
+              "PublicIP": "Static",
+              "Zone": 0
+            }
+          ],
+          "SQLServersAS": [
+            "CLS01",
+            "CLS02"
+          ],
+          "SQLServers": [
+            {
+              "VMName": "SQL01",
+              "ASName": "CLS01",
+              "Role": "SQL",
+              "Subnet": "BE01",
+              "LB": "CLS01",
+              "FastNic": 0,
+              "Zone": 0,
+              "DDRole": "SQL4TB",
+              "AppInfo": {
+                "ClusterInfo": {
+                  "CLIP": "216",
+                  "CLNAME": "CLS01",
+                  "Primary": "SQL01",
+                  "Secondary": [
+                    "SQL02"
+                  ]
+                },
+                "aoinfo": [
+                  {
+                    "GroupName": "AG01",
+                    "PrimaryAG": "SQL01",
+                    "SecondaryAG": "SQL02",
+                    "AOIP": "215",
+                    "ProbePort": "59999",
+                    "InstanceName": "ADF_1"
+                  }
+                ]
+              }
+            },
+            {
+              "VMName": "SQL02",
+              "CLNAME": "CLS01",
+              "ASName": "CLS01",
+              "Role": "SQL",
+              "Subnet": "BE01",
+              "LB": "CLS01",
+              "FastNic": 0,
+              "Zone": 0,
+              "Internet": "PLB01",
+              "DDRole": "SQL4TB",
+              "AppInfo": {
+                "ClusterInfo": {
+                  "CLIP": "216",
+                  "CLNAME": "CLS01",
+                  "Primary": "SQL01",
+                  "Secondary": [
+                    "SQL02"
+                  ]
+                },
+                "aoinfo": [
+                  {
+                    "GroupName": "AG01",
+                    "PrimaryAG": "SQL01",
+                    "SecondaryAG": "SQL02",
+                    "InstanceName": "ADF_1"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "WAFInfo": [
+          {
+            "WAFName": "CONNECTS",
+            "WAFEnabled": true,
+            "WAFMode": "Detection",
+            "WAFSize": "WAF_Medium",
+            "WAFCapacity": 2,
+            "PrivateIP": "252",
+            "FQDNs": [
+              {
+                "fqdn": "CNN01"
+              },
+              {
+                "fqdn": "CNN02"
+              },
+              {
+                "fqdn": "CNN03"
+              },
+              {
+                "fqdn": "CNN04"
+              },
+              {
+                "fqdn": "CNN05"
+              },
+              {
+                "fqdn": "CNN06"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "WildcardCertBase64Public": {
+      "reference": {
+        "keyVault": {
+          "id": "/subscriptions/b8f402aa-20f7-4888-b45c-3cf086dad9c3/resourceGroups/rgGlobal/providers/Microsoft.KeyVault/vaults/kvContosoEastUS2"
+        },
+        "secretName": "MultiDomainwildcardBase64Public"
+      }
+    }
+  }
+}

@@ -1,0 +1,145 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "Prefix": {
+      "type": "string",
+      "defaultValue": "AZE2",
+      "minLength": 1,
+      "allowedValues": [
+        "AZE2",
+        "AZC1"
+      ]
+    },
+    "Environment": {
+      "type": "string",
+      "defaultValue": "D",
+      "allowedValues": [
+        "D",
+        "T",
+        "Q",
+        "P"
+      ]
+    },
+    "DeploymentID": {
+      "type": "string",
+      "defaultValue": "1",
+      "allowedValues": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    "Stage": {
+      "type": "object"
+    },
+    "Extensions": {
+      "type": "object"
+    },
+    "vmAdminPassword": {
+      "type": "securestring"
+    },
+    "WildcardCertBase64": {
+      "type": "securestring"
+    },
+    "WildcardCertBase64Public": {
+      "type": "securestring"
+    },
+    "DSCUpdateTagVersion": {
+      "type": "string",
+      "defaultValue": "1.0",
+      "metadata": {
+        "description": "This value must be changed from a previous deployment to ensure the DSC extensions will re-run"
+      }
+    },
+    "Global": {
+      "type": "object"
+    },
+    "DeploymentInfo": {
+      "type": "object"
+    },
+    "_artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Auto-generated container in staging storage account to receive post-build staging folder upload"
+      }
+    },
+    "_artifactsLocationSasToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Auto-generated token to access artifactsLocation"
+      }
+    }
+  },
+  "variables": {
+
+ "Deployment": "[concat(parameters('Prefix'),'-',parameters('Global').Appname,'-',parameters('Environment'),parameters('DeploymentID'))]",
+ "Domain": "[split(parameters('Global').DomainName,'.')[0]]",
+
+    // "subscriptionId": "[subscription().subscriptionId]",
+    // "resourceGroupName": "[resourceGroup().name]",
+
+    // "List": {
+    //   "Item1": "vmAdminPasswordDev",
+    //   "Item2": "vmAdminPassword"
+    // },
+
+    // //"AppServers": "[parameters('DeploymentInfo').AppServers['AppServers']]",
+   "AppServers": "[parameters('DeploymentInfo').Appservers['ADPrimary']]",
+
+    // "saWitnessName": "[toLower(replace(concat(variables('Deployment'), 'sawitness'),'-',''))]",
+
+    // "saaccountidwitness": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/',variables('resourceGroupName'),'/providers/Microsoft.Storage/storageAccounts/',variables('SAWitnessName'))]",
+
+    // "test": "[concat(replace('string1','string',''))]",
+
+    // "saaccountidglobalsource": "[concat('/subscriptions/', subscription().subscriptionId, '/resourceGroups/',parameters('Global').RGName,'/providers/Microsoft.Storage/storageAccounts/', parameters('Global').SAName)]",
+
+  },
+  "resources": [
+    // {
+    //   "name": "[parameters('Stage')[copyIndex()].Name]",
+    //   "type": "Microsoft.Storage/storageAccounts",
+    //   "location": "[resourceGroup().location]",
+    //   "copy": {
+    //     "count":"[length(parameters('Stage'))]",
+    //     "name": "copyloop"
+    //   },
+    //   "apiVersion": "2017-06-01",
+    //   "sku": {
+    //     "name": "Standard_LRS"
+    //   },
+    //   "dependsOn": [],
+    //   "tags": {
+    //     "displayName": "SQLWitnessStorageAccount"
+    //   },
+    //   "kind": "Storage",
+    //   "properties": {
+    //     "encryption": {
+    //       "keySource": "Microsoft.Storage",
+    //       "services": {
+    //         "blob": {
+    //           "enabled": true
+    //         },
+    //         "file": {
+    //           "enabled": true
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
+  ],
+  "outputs": {
+    "foo": {
+     "value": "[guid( reference(resourceid('Microsoft.Compute/virtualMachines',concat(variables('Deployment'),'-vm',variables('AppServers')[0].VMName)),'2017-12-01','Full').identity.principalId )]",
+     "type": "string"
+    }
+  }
+}

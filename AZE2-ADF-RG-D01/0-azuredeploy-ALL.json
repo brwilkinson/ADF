@@ -1,0 +1,395 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "Prefix": {
+      "type": "string",
+      "defaultValue": "AZE2",
+      "minLength": 1,
+      "allowedValues": [
+        "AZE2",
+        "AZC1"
+      ]
+    },
+    "Environment": {
+      "type": "string",
+      "defaultValue": "D",
+      "allowedValues": [
+        "D",
+        "T",
+        "Q",
+        "P"
+      ]
+    },
+    "DeploymentID": {
+      "type": "string",
+      "defaultValue": "1",
+      "allowedValues": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    "Stage": {
+      "type": "object"
+    },
+    "Extensions": {
+      "type": "object"
+    },
+    "vmAdminPassword": {
+      "type": "securestring"
+    },
+    "WildcardCertBase64": {
+      "type": "securestring"
+    },
+    "WildcardCertBase64Public": {
+      "type": "securestring"
+    },
+    "DSCUpdateTagVersion": {
+      "type": "string",
+      "defaultValue": "1.0",
+      "metadata": {
+        "description": "This value must be changed from a previous deployment to ensure the DSC extensions will re-run"
+      }
+    },
+    "Global": {
+      "type": "object"
+    },
+    "DeploymentInfo": {
+      "type": "object"
+    },
+    "_artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Auto-generated container in staging storage account to receive post-build staging folder upload"
+      }
+    },
+    "_artifactsLocationSasToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Auto-generated token to access artifactsLocation"
+      }
+    }
+  },
+  "variables": {
+
+    "Deployment": "[concat(parameters('Prefix'),'-',parameters('Global').Appname,'-',parameters('Environment'),parameters('DeploymentID'))]",
+
+    "networkId": "[concat(parameters('Global').networkid[0],string(sub(parameters('Global').networkid[1],int(parameters('DeploymentID')))))]",
+
+    "OMSworkspaceName": "[replace(concat(variables('Deployment'),'OMSLogAnalytics'),'-','')]",
+    "OMSworkspaceID": "[resourceid('Microsoft.OperationalInsights/workspaces/',variables('OMSworkspaceName'))]",
+
+    "addressPrefixes": [
+      "[concat(variables('networkId'),'.0/24')]"
+    ],
+
+    "DC1PrivateIPAddress": "[concat(variables('networkId'),'.',parameters('DeploymentInfo').DC1PrivateIPAddress)]",
+    "DC2PrivateIPAddress": "[concat(variables('networkId'),'.',parameters('DeploymentInfo').DC2PrivateIPAddress)]",
+
+    "DeploymentInfoObject": {
+      "OMS": "1-azuredeploy-OMS.json",
+      "NSG": "2-azuredeploy-NSG.json",
+      "VNet": "3-azuredeploy-VNet.json",
+      "ILB": "4-azuredeploy-ILBalancer.json",
+      "VNetDNS": "nestedtemplates\\SetvNetDNS.json",
+      "ADPrimary": "5-azuredeploy-VMApp.json",
+      "ADSecondary": "5-azuredeploy-VMApp.json",
+      "VMApp": "5-azuredeploy-VMApp.json",
+      "VMSQL": "5-azuredeploy-VMApp.json",
+      "WAF": "6-azuredeploy-WAF.json",
+      "DASHBOARD": "7-azuredeploy-Dashboard.json"
+    }
+
+  },
+  "resources": [
+    {
+      "condition": "[equals(parameters('Stage').OMS,1)]",
+      "name": "[concat('dp', variables('Deployment'), '-OMS')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-08-01",
+      "dependsOn": [],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/', variables('DeploymentInfoObject').OMS, parameters('_artifactsLocationSasToken'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": "[deployment().properties.parameters]"
+      }
+    },
+    {
+      "condition": "[equals(parameters('Stage').NSG,1)]",
+      "name": "[concat('dp', variables('Deployment'), '-NSG')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-08-01",
+      "dependsOn": [],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/', variables('DeploymentInfoObject').NSG, parameters('_artifactsLocationSasToken'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": "[deployment().properties.parameters]"
+      }
+    },
+    {
+      "condition": "[equals(parameters('Stage').VNET,1)]",
+      "name": "[concat('dp', variables('Deployment'), '-VNET')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-08-01",
+      "dependsOn": [
+        "[concat('dp', variables('Deployment'), '-NSG')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/', variables('DeploymentInfoObject').VNET, parameters('_artifactsLocationSasToken'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": "[deployment().properties.parameters]"
+      }
+    },
+    {
+      "condition": "[equals(parameters('Stage').ILB,1)]",
+      "name": "[concat('dp', variables('Deployment'), '-ILB')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-08-01",
+      "dependsOn": [
+        "[concat('dp', variables('Deployment'), '-VNET')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/', variables('DeploymentInfoObject').ILB, parameters('_artifactsLocationSasToken'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": "[deployment().properties.parameters]"
+      }
+    },
+    {
+      "condition": "[equals(parameters('Stage').ADPrimary,1)]",
+      "name": "[concat('dp', variables('Deployment'), '-VNETDNSPublic')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-08-01",
+      "dependsOn": [
+        "[concat('dp', variables('Deployment'), '-VNET')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/', variables('DeploymentInfoObject').VNetDNS, parameters('_artifactsLocationSasToken'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "Deployment": {
+            "value": "[variables('Deployment')]"
+          },
+          "DeploymentID": {
+            "value": "[parameters('DeploymentID')]"
+          },
+          "DeploymentInfo": {
+            "value": "[parameters('DeploymentInfo')]"
+          },
+          "DNSServers": {
+            "value": [
+              "[variables('DC1PrivateIPAddress')]",
+              "8.8.8.8"
+            ]
+          },
+          "Global": {
+            "value": "[parameters('Global')]"
+          }
+        }
+      }
+    },
+    {
+      "condition": "[equals(parameters('Stage').ADPrimary,1)]",
+      "name": "[concat('dp', variables('Deployment'), '-ADPrimary')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-08-01",
+      "dependsOn": [
+        "[concat('dp', variables('Deployment'), '-VNETDNSPublic')]",
+        "[concat('dp', variables('Deployment'), '-OMS')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/', variables('DeploymentInfoObject').ADPrimary, parameters('_artifactsLocationSasToken'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": "[deployment().properties.parameters]"
+      }
+    },
+    {
+      "condition": "[equals(parameters('Stage').ADPrimary,1)]",
+      "name": "[concat('dp', variables('Deployment'), '-VNETDNSDC1')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-08-01",
+      "dependsOn": [
+        "[concat('dp', variables('Deployment'), '-ADPrimary')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/', variables('DeploymentInfoObject').VNetDNS, parameters('_artifactsLocationSasToken'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "Deployment": {
+            "value": "[variables('Deployment')]"
+          },
+          "DeploymentID": {
+            "value": "[parameters('DeploymentID')]"
+          },
+          "DeploymentInfo": {
+            "value": "[parameters('DeploymentInfo')]"
+          },
+          "DNSServers": {
+            "value": [
+              "[variables('DC1PrivateIPAddress')]",
+              "[variables('DC2PrivateIPAddress')]"
+            ]
+          },
+          "Global": {
+            "value": "[parameters('Global')]"
+          }
+        }
+      }
+    },
+    {
+      "condition": "[equals(parameters('Stage').ADSecondary,1)]",
+      "name": "[concat('dp', variables('Deployment'), '-ADSecondary')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-08-01",
+      "dependsOn": [
+        "[concat('dp', variables('Deployment'), '-VNETDNSDC1')]",
+        "[concat('dp', variables('Deployment'), '-OMS')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/', variables('DeploymentInfoObject').ADSecondary, parameters('_artifactsLocationSasToken'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": "[deployment().properties.parameters]"
+      }
+    },
+    {
+     "condition": "[equals(parameters('Stage').ADSecondary,1)]",
+     "name": "[concat('dp', variables('Deployment'), '-VNETDNSDC2')]",
+     "type": "Microsoft.Resources/deployments",
+     "apiVersion": "2017-08-01",
+     "dependsOn": [
+       "[concat('dp', variables('Deployment'), '-ADSecondary')]"
+     ],
+     "properties": {
+       "mode": "Incremental",
+       "templateLink": {
+         "uri": "[concat(parameters('_artifactsLocation'), '/', variables('DeploymentInfoObject').VNetDNS, parameters('_artifactsLocationSasToken'))]",
+         "contentVersion": "1.0.0.0"
+       },
+       "parameters": {
+         "Deployment": {
+           "value": "[variables('Deployment')]"
+         },
+         "DeploymentID": {
+           "value": "[parameters('DeploymentID')]"
+         },
+         "DeploymentInfo": {
+           "value": "[parameters('DeploymentInfo')]"
+         },
+         "DNSServers": {
+           "value": [
+             "[variables('DC1PrivateIPAddress')]",
+             "[variables('DC2PrivateIPAddress')]"
+           ]
+         },
+         "Global": {
+           "value": "[parameters('Global')]"
+         }
+       }
+     }
+    },
+    {
+      "condition": "[equals(parameters('Stage').VMApp,1)]",
+      "name": "[concat('dp', variables('Deployment'), '-AppServers')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-08-01",
+      "dependsOn": [
+        "[concat('dp', variables('Deployment'), '-VNETDNSDC1')]",
+        "[concat('dp', variables('Deployment'), '-VNETDNSDC2')]",
+        "[concat('dp', variables('Deployment'), '-OMS')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/', variables('DeploymentInfoObject').VMApp, parameters('_artifactsLocationSasToken'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": "[deployment().properties.parameters]"
+      }
+    },
+    {
+      "condition": "[equals(parameters('Stage').VMSQL,1)]",
+      "name": "[concat('dp', variables('Deployment'), '-SQLServers')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-08-01",
+      "dependsOn": [
+        "[concat('dp', variables('Deployment'), '-VNETDNSDC1')]",
+        "[concat('dp', variables('Deployment'), '-VNETDNSDC2')]",
+        "[concat('dp', variables('Deployment'), '-ILB')]",
+        "[concat('dp', variables('Deployment'), '-OMS')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/', variables('DeploymentInfoObject').VMSQL, parameters('_artifactsLocationSasToken'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": "[deployment().properties.parameters]"
+      }
+    },
+    {
+      "condition": "[equals(parameters('Stage').WAF,1)]",
+      "name": "[concat('dp', variables('Deployment'), '-WAF')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-08-01",
+      "dependsOn": [
+        "[concat('dp', variables('Deployment'), '-VNET')]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/', variables('DeploymentInfoObject').WAF, parameters('_artifactsLocationSasToken'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": "[deployment().properties.parameters]"
+      }
+    },
+    {
+      "condition": "[equals(parameters('Stage').DASHBOARD,1)]",
+      "name": "[concat('dp', variables('Deployment'), '-DASHBOARD')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2017-08-01",
+      "dependsOn": [ ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[concat(parameters('_artifactsLocation'), '/', variables('DeploymentInfoObject').DASHBOARD, parameters('_artifactsLocationSasToken'))]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": "[deployment().properties.parameters]"
+      }
+    }
+  ],
+  "outputs": {
+  }
+}

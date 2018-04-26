@@ -1,0 +1,110 @@
+#
+# ServerList.ps1
+#
+
+
+ {
+            "VMName": "SQL03",
+            "ASName": "CLS02",
+            "Role": "SQL",
+            "Subnet": "BE01",
+            "LB": "CLS02",
+            "FastNic": 1,
+            "Zone": 0,
+            "Internet": "PLB01",
+            "DDRole": "SQL4TB",
+            "ClusterInfo": {
+              "CLIP": "214",
+              "CLNAME": "CLS02",
+              "Primary": "SQL03",
+              "Secondary": [
+                "SQL04"
+              ]
+            },
+            "aoinfo": [
+              {
+                "GroupName": "AG02",
+                "PrimaryAG": "SQL03",
+                "SecondaryAG": "SQL04",
+                "AOIP": "213",
+                "ProbePort": "59999",
+                "InstanceName": "ADF_2"
+              }
+            ]
+          },
+          {
+            "VMName": "SQL04",
+            "InstanceName": "ADF_2",
+            "ASName": "CLS02",
+            "Role": "SQL",
+            "Subnet": "BE01",
+            "LB": "CLS02",
+            "FastNic": 1,
+            "Zone": 0,
+            "Internet": "PLB01",
+            "DDRole": "SQL4TB",
+            "ClusterInfo": {
+              "CLIP": "214",
+              "CLNAME": "CLS02",
+              "Primary": "SQL03",
+              "Secondary": [
+                "SQL04"
+              ]
+            },
+            "aoinfo": [
+              {
+                "GroupName": "AG02",
+                "PrimaryAG": "SQL03",
+                "SecondaryAG": "SQL04",
+                "InstanceName": "ADF_2"
+              }
+            ]
+          }
+
+
+"DataDiskInfo":{
+    "127GB":[{"name":"-data-DATA00","lun":0,"caching":"ReadOnly","diskSizeGB":"127","createOption":"Empty"}],
+    "SQL4TB":[{"name":"-DATA-DATA00","lun":0,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-DATA-DATA01","lun":1,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-DATA-DATA02","lun":2,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-DATA-DATA03","lun":3,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-DATA-LOGS01","lun":8,"caching":"None","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-DATA-TEMPDB01","lun":12,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-DATA-BACKUP00","lun":15,"caching":"None","diskSizeGB":"1023","createOption":"Empty"}],
+    "SQL6TB":[{"name":"-data-DATA00","lun":0,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA01","lun":1,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA02","lun":2,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA03","lun":3,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA04","lun":4,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA05","lun":5,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-LOGS01","lun":10,"caching":"None","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-LOGS02","lun":11,"caching":"None","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-TEMPDB01","lun":16,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-TEMPDB02","lun":17,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-BACKUP00","lun":20,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-BACKUP01","lun":21,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"}],
+    "SQL12TB":[{"name":"-data-DATA00","lun":0,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA01","lun":1,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA02","lun":2,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA03","lun":3,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA04","lun":4,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA05","lun":5,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA06","lun":6,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA07","lun":7,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA08","lun":8,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA09","lun":9,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA10","lun":10,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-DATA11","lun":11,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-LOGS01","lun":20,"caching":"None","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-LOGS02","lun":21,"caching":"None","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-LOGS03","lun":22,"caching":"None","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-LOGS04","lun":23,"caching":"None","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-TEMPDB01","lun":30,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-TEMPDB02","lun":31,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-TEMPDB03","lun":32,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-TEMPDB04","lun":33,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-BACKUP00","lun":40,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"},
+        {"name":"-data-BACKUP01","lun":41,"caching":"ReadOnly","diskSizeGB":"1023","createOption":"Empty"}
+        ]
+    }
+    }

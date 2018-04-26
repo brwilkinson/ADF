@@ -1,0 +1,71 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|AnyCPU">
+      <Configuration>Debug</Configuration>
+      <Platform>AnyCPU</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|AnyCPU">
+      <Configuration>Release</Configuration>
+      <Platform>AnyCPU</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>f372f117-fe83-4293-bb56-a654a02ea2fa</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PrepareForBuildDependsOn>
+    </PrepareForBuildDependsOn>
+  </PropertyGroup>
+  <Import Condition=" Exists('Deployment.targets') " Project="Deployment.targets" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+  <!-- vertag<:>start tokens<:>maj.min -->
+  <Import Condition=" Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Deployment\1.1\DeploymentProject.targets') " Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Deployment\1.1\DeploymentProject.targets" />
+  <!-- vertag<:>end -->
+  <ItemGroup>
+    <Content Include="0-azuredeploy-ALL.json" />
+    <Content Include="1-azuredeploy-OMS.json" />
+    <Content Include="3-azuredeploy-VNet.json" />
+    <Content Include="5-azuredeploy-VMApp.json" />
+    <Content Include="4-azuredeploy-ILBalancer.json" />
+    <Content Include="azuredeploy.1-dev.parameters.json" />
+    <Content Include="CD\ADp-ConfigurationData.psd1" />
+    <Content Include="CD\ADs-ConfigurationData.psd1" />
+    <Content Include="CD\JMP-ConfigurationData.psd1" />
+    <Content Include="0-azuredeploy-Test.json" />
+    <Content Include="2-azuredeploy-NSG.json" />
+    <Content Include="azuredeploy.blank.test.parameters.json" />
+    <None Include="6-azuredeploy-WAF.json" />
+    <None Include="7-azuredeploy-Dashboard.json" />
+    <None Include="Archive\6-azuredeploy-VMSQL.json" />
+    <None Include="Archive\SQLs-ConfigurationData.psd1" />
+    <Content Include="CD\SQL-ConfigurationData.psd1" />
+    <None Include="Deployment.targets">
+      <Visible>False</Visible>
+    </None>
+    <Content Include="Deploy-AzureResourceGroup.ps1" />
+    <Content Include="DSC\DSC-AppServers.ps1" />
+    <Content Include="DSC\DSC-ADPrimary.ps1" />
+    <Content Include="DSC\DSC-ADSecondary.ps1" />
+    <Content Include="DSC\DSC-SQLServers.ps1" />
+    <Content Include="nestedtemplates\SetvNetDNS.json" />
+    <None Include="PrereqsToDeploy\0-ConnectToAzureSelectSubscription.ps1" />
+    <None Include="PrereqsToDeploy\1-CreateKeyVaultAndStoreSecrets.ps1" />
+    <None Include="PrereqsToDeploy\2-CreateStorageAccountGlobal.ps1" />
+    <None Include="PrereqsToDeploy\3.1-CreateUploadWebCert.ps1" />
+    <None Include="PrereqsToDeploy\3.2-CreateUploadSSTPCerts.ps1" />
+    <None Include="PrereqsToDeploy\3.3-CreateWebAppFirewallCert.ps1" />
+    <None Include="PrereqsToDeploy\4-DetermineSizeOffersSkus.ps1" />
+    <None Include="PrereqsToDeploy\5-DeterminePublisherImageOffers.ps1" />
+    <None Include="PrereqsToDeploy\5.1-PreReqDSCModuleList.ps1" />
+    <None Include="PrereqsToDeploy\5.2-PreReqDSCModuleListAutomation.ps1" />
+    <None Include="PrereqsToDeploy\6-ListAPIVersions.ps1" />
+    <None Include="PrereqsToDeploy\7-Query-DeleteVMExtensions.ps1" />
+    <None Include="PrereqsToDeploy\8-DeleteVirtualMachineandDisks.ps1" />
+    <None Include="PrereqsToDeploy\ServerList.txt" />
+    <None Include="PrereqsToDeploy\Start-AzureRMDeploy.ps1" />
+    <None Include="PrereqsToDeploy\Start-AzureRMDeployClient.ps1" />
+    <None Include="PrereqsToDeploy\_StoragePoolcustom.zip" />
+  </ItemGroup>
+  <Target Name="GetReferenceAssemblyPaths" />
+</Project>

@@ -1,0 +1,405 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "Prefix": {
+      "type": "string",
+      "defaultValue": "AZE2",
+      "minLength": 1,
+      "allowedValues": [
+        "AZE2",
+        "AZC1"
+      ]
+    },
+    "Environment": {
+      "type": "string",
+      "defaultValue": "D",
+      "allowedValues": [
+        "D",
+        "T",
+        "Q",
+        "P"
+      ]
+    },
+    "DeploymentID": {
+      "type": "string",
+      "defaultValue": "1",
+      "allowedValues": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    "Stage": {
+      "type": "object"
+    },
+    "Extensions": {
+      "type": "object"
+    },
+    "vmAdminPassword": {
+      "type": "securestring"
+    },
+    "WildcardCertBase64": {
+      "type": "securestring"
+    },
+    "WildcardCertBase64Public": {
+      "type": "securestring"
+    },
+    "DSCUpdateTagVersion": {
+      "type": "string",
+      "defaultValue": "1.0",
+      "metadata": {
+        "description": "This value must be changed from a previous deployment to ensure the DSC extensions will re-run"
+      }
+    },
+    "Global": {
+      "type": "object"
+    },
+    "DeploymentInfo": {
+      "type": "object"
+    },
+    "_artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Auto-generated container in staging storage account to receive post-build staging folder upload"
+      }
+    },
+    "_artifactsLocationSasToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Auto-generated token to access artifactsLocation"
+      }
+    }
+  },
+  "variables": {
+    // Global  BRWDev101
+    "Deployment": "[concat(parameters('Prefix'),'-',parameters('Global').Appname,'-',parameters('Environment'),parameters('DeploymentID'))]",
+
+    // subscriptionId
+    "subscriptionId": "[subscription().subscriptionId]",
+    // rgName
+    "resourceGroupName": "[resourceGroup().name]",
+
+    "VnetID": "[resourceId('Microsoft.Network/virtualNetworks', concat(Variables('Deployment'),'-vn'))]",
+    "snWAF01Name": "snWAF01",
+    "SubnetRefGW": "[concat(variables('VNetID'), '/subnets/', variables('snWAF01Name'))]",
+
+    "networkId": "[concat(parameters('Global').networkid[0],string(sub(parameters('Global').networkid[1],int(parameters('DeploymentID')))))]",
+
+    "WAFInfo": "[parameters('DeploymentInfo').WAFInfo]",
+
+    "OMSworkspaceName": "[replace(concat(variables('Deployment'),'OMSLogAnalytics'),'-','')]",
+    "OMSworkspaceID": "[resourceid('Microsoft.OperationalInsights/workspaces/',variables('OMSworkspaceName'))]"
+
+  },
+  "resources": [
+    {
+      "apiVersion": "2017-03-01",
+      "name": "[concat(variables('Deployment'),'-waf',variables('WAFInfo')[copyIndex(0)].WAFName)]",
+      "type": "Microsoft.Network/applicationGateways",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "WAFLoop",
+        "count": "[length( variables('WAFInfo') )]"
+      },
+      "tags": {
+        "displayName": "WAF"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', concat(variables('Deployment'),'-publicipWAF',variables('WAFInfo')[copyIndex(0)].WAFName))]"
+      ],
+      "properties": {
+        "sku": {
+          "name": "[variables('WAFInfo')[copyIndex(0)].WAFSize]",
+          "tier": "WAF",
+          "capacity": "[variables('WAFInfo')[copyIndex(0)].WAFCapacity]"
+        },
+        "authenticationCertificates": [
+          {
+            "properties": {
+              "data": "[parameters('WildcardCertBase64Public')]"
+            },
+            "name": "wildcardMultiDomainPublic"
+          }
+        ],
+        "sslCertificates": [
+          {
+            "properties": {
+              "data": "[parameters('WildcardCertBase64')]",
+              "password": "[parameters('vmAdminPassword')]",
+              "publicCertData": "[parameters('WildcardCertBase64Public')]"
+
+            },
+            "name": "wildcardMultiDomain"
+          }
+        ],
+        "gatewayIPConfigurations": [
+          {
+            "name": "appGatewayIpConfig",
+            "properties": {
+              "subnet": {
+                "id": "[variables('subnetRefGW')]"
+              }
+            }
+          }
+        ],
+        "frontendIPConfigurations": [
+          {
+            "name": "appGatewayFrontendIP",
+            "properties": {
+              "PublicIPAddress": {
+                "id": "[concat(resourceId('Microsoft.Network/publicIPAddresses/', concat(variables('Deployment'),'-publicipwaf', variables('WAFInfo')[copyIndex(0)].WAFName)) )]"
+              }
+            }
+          },
+          {
+            "name": "appGatewayFrontendIPPrivate",
+            "properties": {
+              "privateIPAddress": "[concat(variables('networkId'),'.',variables('WAFInfo')[copyIndex(0)].PrivateIP)]",
+              "privateIPAllocationMethod": "Static",
+              "subnet": { "id": "[variables('SubnetRefGW')]" }
+            }
+          }
+        ],
+        "frontendPorts": [
+          {
+            "name": "appGatewayFrontendPort80",
+            "properties": {
+              "Port": 80
+            }
+          },
+          {
+            "name": "appGatewayFrontendPort443",
+            "properties": {
+              "Port": 443
+
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "appGatewayBackendPool",
+            "properties": {
+              "copy": [
+                {
+                  "name": "BackendAddresses",
+                  "count": "[length(variables('WAFInfo')[copyIndex(0)].FQDNs)]",
+                  "input": {
+                    "fqdn": "[concat(replace(variables('Deployment'),'-',''),variables('WAFInfo')[copyIndex(0)].FQDNs[copyIndex('BackendAddresses')].FQDN,'.',parameters('Global').DomainName)]"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "backendHttpSettingsCollection": [
+          {
+            "name": "appGatewayBackendHttpSettings80",
+            "properties": {
+              "Port": 80,
+              "Protocol": "Http",
+              "CookieBasedAffinity": "Disabled",
+              "RequestTimeout": 600
+            }
+
+          },
+          {
+            "name": "appGatewayBackendHttpSettings443",
+            "properties": {
+              "Port": 443,
+              "Protocol": "Https",
+              "CookieBasedAffinity": "Disabled",
+              "RequestTimeout": 600,
+              "authenticationCertificates": [
+                {
+                  "id": "[concat(resourceId('Microsoft.Network/applicationGateways/', concat(variables('Deployment'),'-waf',variables('WAFInfo')[copyIndex(0)].WAFName)),'/authenticationCertificates/wildcardMultiDomainPublic' )]"
+                }
+              ]
+            }
+
+          }
+        ],
+        "httpListeners": [
+          {
+            "name": "appGatewayHttpListener80",
+            "properties": {
+              "FrontendIPConfiguration": {
+                "id": "[concat(resourceId('Microsoft.Network/applicationGateways/', concat(variables('Deployment'),'-waf',variables('WAFInfo')[copyIndex(0)].WAFName)),'/frontendIPConfigurations/appGatewayFrontendIPPrivate' )]"
+              },
+              "FrontendPort": {
+                "id": "[concat(resourceId('Microsoft.Network/applicationGateways/', concat(variables('Deployment'),'-waf',variables('WAFInfo')[copyIndex(0)].WAFName)),'/frontendPorts/appGatewayFrontendPort80' )]"
+              },
+              "Protocol": "Http"
+            }
+          },
+          {
+            "name": "appGatewayHttpListener443",
+            "properties": {
+              "FrontendIPConfiguration": {
+
+                "id": "[concat(resourceId('Microsoft.Network/applicationGateways/', concat(variables('Deployment'),'-waf',variables('WAFInfo')[copyIndex(0)].WAFName)),'/frontendIPConfigurations/appGatewayFrontendIPPrivate' )]"
+              },
+              "FrontendPort": {
+
+                "id": "[concat(resourceId('Microsoft.Network/applicationGateways/', concat(variables('Deployment'),'-waf',variables('WAFInfo')[copyIndex(0)].WAFName)),'/frontendPorts/appGatewayFrontendPort443' )]"
+              },
+              "Protocol": "Https",
+
+              "SslCertificate": {
+                "id": "[concat(resourceId('Microsoft.Network/applicationGateways/', concat(variables('Deployment'),'-waf',variables('WAFInfo')[copyIndex(0)].WAFName)),'/sslCertificates/wildcardMultiDomain' )]"
+              }
+            }
+          }
+        ],
+        "requestRoutingRules": [
+          {
+            "Name": "rule80",
+            "properties": {
+              "RuleType": "Basic",
+              "httpListener": {
+                "id": "[concat(resourceId('Microsoft.Network/applicationGateways/', concat(variables('Deployment'),'-waf',variables('WAFInfo')[copyIndex(0)].WAFName)),'/httpListeners/appGatewayHttpListener80' )]"
+              },
+              "backendAddressPool": {
+                "id": "[concat(resourceId('Microsoft.Network/applicationGateways/', concat(variables('Deployment'),'-waf',variables('WAFInfo')[copyIndex(0)].WAFName)),'/backendAddressPools/appGatewayBackendPool' )]"
+              },
+              "backendHttpSettings": {
+                "id": "[concat(resourceId('Microsoft.Network/applicationGateways/', concat(variables('Deployment'),'-waf',variables('WAFInfo')[copyIndex(0)].WAFName)),'/backendHttpSettingsCollection/appGatewayBackendHttpSettings80' )]"
+              }
+            }
+          },
+          {
+            "Name": "rule443",
+            "properties": {
+              "RuleType": "Basic",
+              "httpListener": {
+
+                "id": "[concat(resourceId('Microsoft.Network/applicationGateways/', concat(variables('Deployment'),'-waf',variables('WAFInfo')[copyIndex(0)].WAFName)),'/httpListeners/appGatewayHttpListener443' )]"
+              },
+              "backendAddressPool": {
+
+                "id": "[concat(resourceId('Microsoft.Network/applicationGateways/', concat(variables('Deployment'),'-waf',variables('WAFInfo')[copyIndex(0)].WAFName)),'/backendAddressPools/appGatewayBackendPool' )]"
+              },
+              "backendHttpSettings": {
+
+                "id": "[concat(resourceId('Microsoft.Network/applicationGateways/', concat(variables('Deployment'),'-waf',variables('WAFInfo')[copyIndex(0)].WAFName)),'/backendHttpSettingsCollection/appGatewayBackendHttpSettings443' )]"
+              }
+            }
+          }
+        ],
+        "webApplicationFirewallConfiguration": {
+          "enabled": "[variables('WAFInfo')[copyIndex(0)].WAFEnabled]",
+          "firewallMode": "[variables('WAFInfo')[copyIndex(0)].WAFMode]",
+          "ruleSetType": "OWASP",
+          "ruleSetVersion": "3.0",
+          "disabledRuleGroups": []
+        }
+      },
+      "resources": [
+        {
+          "type": "providers/diagnosticSettings",
+          "name": "Microsoft.Insights/service",
+          "dependsOn": [
+            "[concat(variables('Deployment'),'-waf',variables('WAFInfo')[copyIndex(0)].WAFName)]"
+          ],
+          "apiVersion": "2015-07-01",
+          "properties": {
+            "workspaceId": "[variables('OMSworkspaceID')]",
+            "logs": [
+              {
+                "category": "ApplicationGatewayAccessLog",
+                "enabled": true,
+                "retentionPolicy": {
+                  "days": 30,
+                  "enabled": false
+                }
+              },
+              {
+                "category": "ApplicationGatewayPerformanceLog",
+                "enabled": true,
+                "retentionPolicy": {
+                  "days": 30,
+                  "enabled": false
+                }
+              },
+              {
+                "category": "ApplicationGatewayFirewallLog",
+                "enabled": true,
+                "retentionPolicy": {
+                  "days": 30,
+                  "enabled": false
+                }
+              }
+            ],
+            "metrics": [
+              {
+                "timeGrain": "PT5M",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": false,
+                  "days": 0
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "name": "[concat(variables('Deployment'),'-publicipWAF',variables('WAFInfo')[copyIndex(0)].WAFName)]",
+      "copy": {
+        "name": "PublicIPLoop",
+        "count": "[length( variables('WAFInfo') )]"
+      },
+
+      "dependsOn": [],
+      "tags": {
+        "displayName": "WAF_PublicIP"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic"
+      },
+      "resources": [
+        {
+          "type": "providers/diagnosticSettings",
+          "name": "Microsoft.Insights/service",
+          "dependsOn": [
+            "[concat(variables('Deployment'),'-publicipWAF',variables('WAFInfo')[copyIndex(0)].WAFName)]"
+          ],
+          "apiVersion": "2015-07-01",
+          "properties": {
+            "workspaceId": "[variables('OMSworkspaceID')]",
+            "logs": [
+              {
+                "category": "DDoSProtectionNotifications",
+                "enabled": true
+              }
+            ],
+            "metrics": [
+              {
+                "timeGrain": "PT5M",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": false,
+                  "days": 0
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+
+  ],
+  "outputs": {
+  }
+}

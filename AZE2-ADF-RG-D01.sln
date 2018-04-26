@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2015
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{151D2E53-A2C4-4D7D-83FE-D05416EBD58E}") = "AZE2-ADF-RG-D01", "AZE2-ADF-RG-D01\AZE2-ADF-RG-D01.deployproj", "{F372F117-FE83-4293-BB56-A654A02EA2FA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F372F117-FE83-4293-BB56-A654A02EA2FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F372F117-FE83-4293-BB56-A654A02EA2FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F372F117-FE83-4293-BB56-A654A02EA2FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F372F117-FE83-4293-BB56-A654A02EA2FA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {54CCDA0B-525C-4EA0-8D76-4A9EF4C36394}
+	EndGlobalSection
+EndGlobal

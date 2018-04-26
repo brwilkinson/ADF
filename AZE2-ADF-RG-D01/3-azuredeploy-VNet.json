@@ -1,0 +1,150 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "Prefix": {
+      "type": "string",
+      "defaultValue": "AZE2",
+      "minLength": 1,
+      "allowedValues": [
+        "AZE2",
+        "AZC1"
+      ]
+    },
+    "Environment": {
+      "type": "string",
+      "defaultValue": "D",
+      "allowedValues": [
+        "D",
+        "T",
+        "Q",
+        "P"
+      ]
+    },
+    "DeploymentID": {
+      "type": "string",
+      "defaultValue": "1",
+      "allowedValues": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    "Stage": {
+      "type": "object"
+    },
+    "Extensions": {
+      "type": "object"
+    },
+    "vmAdminPassword": {
+      "type": "securestring"
+    },
+    "WildcardCertBase64": {
+      "type": "securestring"
+    },
+    "WildcardCertBase64Public": {
+      "type": "securestring"
+    },
+    "DSCUpdateTagVersion": {
+      "type": "string",
+      "defaultValue": "1.0",
+      "metadata": {
+        "description": "This value must be changed from a previous deployment to ensure the DSC extensions will re-run"
+      }
+    },
+    "Global": {
+      "type": "object"
+    },
+    "DeploymentInfo": {
+      "type": "object"
+    },
+    "_artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Auto-generated container in staging storage account to receive post-build staging folder upload"
+      }
+    },
+    "_artifactsLocationSasToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Auto-generated token to access artifactsLocation"
+      }
+    }
+  },
+  "variables": {
+
+    // Global  BRWDev101
+    "Deployment": "[concat(parameters('Prefix'),'-',parameters('Global').Appname,'-',parameters('Environment'),parameters('DeploymentID'))]",
+
+    // Network
+    "networkId": "[concat(parameters('Global').networkid[0],string(sub(parameters('Global').networkid[1],int(parameters('DeploymentID')))))]",
+
+    "addressPrefixes": [
+      "[concat(variables('networkId'),'.0/24')]"
+    ],
+
+    "DC1PrivateIPAddress": "[concat(variables('networkId'),'.',parameters('DeploymentInfo').DC1PrivateIPAddress)]",
+    "DC2PrivateIPAddress": "[concat(variables('networkId'),'.',parameters('DeploymentInfo').DC2PrivateIPAddress)]",
+
+    "globalnetwork": "[concat('resourceGroups/',parameters('Global').RGName,'/providers/Microsoft.Network')]",
+    "NSGGlobal": { "id": "[resourceid(parameters('Global').RGName,'Microsoft.Network/networkSecurityGroups',parameters('Global').NSGGlobal)]" },
+    "RouteTableGlobal": { "id": "[resourceid(parameters('Global').RGName,'Microsoft.Network/routeTables/',parameters('Global').RouteTableGlobal)]" },
+
+
+    "VnetID": "[resourceId('Microsoft.Network/virtualNetworks', concat(Variables('Deployment'),'-vn'))]",
+
+    "SubnetInfo": "[parameters('DeploymentInfo').SubnetInfo]"
+  },
+  "resources": [
+    {
+      "name": "[concat(Variables('Deployment'),'-vn')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "vNet",
+        "deployment": "[variables('Deployment')]",
+        "environment": "[parameters('Environment')]"
+      },
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": "[variables('addressPrefixes')]"
+        },
+        "dhcpOptions": {
+          "dnsServers": [
+            "[variables('DC1PrivateIPAddress')]",
+            "[variables('DC2PrivateIPAddress')]"
+          ]
+        },
+        "copy": [
+          {
+            "name": "subnets",
+            "count": "[length(variables('SubnetInfo'))]",
+            "input": {
+              "name": "[concat('sn',variables('SubnetInfo')[copyIndex('subnets')].name)]",
+              "properties": {
+                "addressPrefix": "[concat(variables('networkId'),'.',variables('SubnetInfo')[copyIndex('subnets')].Prefix)]",
+                "networkSecurityGroup": "[if( and(contains(variables('SubnetInfo')[copyIndex('subnets')],'NSG' ), equals(variables('SubnetInfo')[copyIndex('subnets')].NSG,1)) , json( concat('{\"id\":\"',string(resourceid('Microsoft.Network/networkSecurityGroups',concat(variables('Deployment'),'-nsg',variables('SubnetInfo')[copyIndex('subnets')].name))),'\"}')) , json('null'))]",
+                "routeTable":           "[if(contains(variables('SubnetInfo')[copyIndex('subnets')],'RT'),                                                                       json( concat('{\"id\":\"',string(resourceid('Microsoft.Network/routeTables',          concat(variables('Deployment'),'-rt',variables('SubnetInfo')[copyIndex('subnets')].name))),'\"}')),json('null'))]"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {
+   "VnetID": {
+      "value": "[variables('networkId')]",
+      "type": "string"
+    }
+  }
+}

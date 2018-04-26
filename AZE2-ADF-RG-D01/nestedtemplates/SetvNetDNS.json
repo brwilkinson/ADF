@@ -1,0 +1,75 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "Deployment": {
+      "type": "string"
+    },
+    "DeploymentID": {
+      "type": "string"
+    },
+    "DeploymentInfo": {
+      "type": "object"
+    },
+    "DNSServers": {
+      "type": "array"
+    },
+    "Global": {
+      "type": "object"
+    }
+  },
+
+  "variables": {
+
+    // Network
+    "networkId": "[concat(parameters('Global').networkid[0],string(sub(parameters('Global').networkid[1],int(parameters('DeploymentID')))))]",
+
+    "addressPrefixes": [
+      "[concat(variables('networkId'),'.0/24')]"
+    ],
+    "SubnetInfo": "[parameters('DeploymentInfo').SubnetInfo]",
+
+    // subscriptionId
+    "subscriptionId": "[subscription().subscriptionId]",
+    // rgName
+    "resourceGroupName": "[resourceGroup().name]",
+
+    "VNetID": "[resourceId(variables('subscriptionId'),variables('ResourceGroupName'), 'Microsoft.Network/VirtualNetworks', concat(parameters('Deployment'),'-vn'))]",
+
+  },
+  "resources": [
+    {
+      "name": "[concat(parameters('Deployment'),'-vn')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-06-15",
+      "dependsOn": [],
+      "tags": {
+        "displayName": "vNet"
+      },
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": "[variables('addressPrefixes')]"
+
+        },
+        "dhcpOptions": {
+          "dnsServers": "[parameters('DNSServers')]"
+        },
+        "copy": [
+          {
+            "name": "subnets",
+            "count": "[length(variables('SubnetInfo'))]",
+            "input": {
+              "name": "[concat('sn',variables('SubnetInfo')[copyIndex('subnets')].name)]",
+              "properties": {
+                "addressPrefix": "[concat(variables('networkId'),'.',variables('SubnetInfo')[copyIndex('subnets')].Prefix)]",
+                "networkSecurityGroup": "[if( and(contains(variables('SubnetInfo')[copyIndex('subnets')],'NSG' ), equals(variables('SubnetInfo')[copyIndex('subnets')].NSG,1)) , json( concat('{\"id\":\"',string(resourceid('Microsoft.Network/networkSecurityGroups',concat(parameters('Deployment'),'-nsg',variables('SubnetInfo')[copyIndex('subnets')].name))),'\"}')) , json('null'))]",
+                "routeTable": "[if(contains(variables('SubnetInfo')[copyIndex('subnets')],'RT'),                                                                       json( concat('{\"id\":\"',string(resourceid('Microsoft.Network/routeTables',          concat(parameters('Deployment'),'-rt',variables('SubnetInfo')[copyIndex('subnets')].name))),'\"}')),json('null'))]"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

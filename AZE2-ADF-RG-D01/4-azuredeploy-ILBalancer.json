@@ -1,0 +1,270 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "Prefix": {
+      "type": "string",
+      "defaultValue": "AZE2",
+      "minLength": 1,
+      "allowedValues": [
+        "AZE2",
+        "AZC1"
+      ]
+    },
+    "Environment": {
+      "type": "string",
+      "defaultValue": "D",
+      "allowedValues": [
+        "D",
+        "T",
+        "Q",
+        "P"
+      ]
+    },
+    "DeploymentID": {
+      "type": "string",
+      "defaultValue": "1",
+      "allowedValues": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    "Stage": {
+      "type": "object"
+    },
+    "Extensions": {
+      "type": "object"
+    },
+    "vmAdminPassword": {
+      "type": "securestring"
+    },
+    "WildcardCertBase64": {
+      "type": "securestring"
+    },
+    "WildcardCertBase64Public": {
+      "type": "securestring"
+    },
+    "DSCUpdateTagVersion": {
+      "type": "string",
+      "defaultValue": "1.0",
+      "metadata": {
+        "description": "This value must be changed from a previous deployment to ensure the DSC extensions will re-run"
+      }
+    },
+    "Global": {
+      "type": "object"
+    },
+    "DeploymentInfo": {
+      "type": "object"
+    },
+    "_artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Auto-generated container in staging storage account to receive post-build staging folder upload"
+      }
+    },
+    "_artifactsLocationSasToken": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Auto-generated token to access artifactsLocation"
+      }
+    }
+  },
+  "variables": {
+    // Global  BRWDev101
+    "Deployment": "[concat(parameters('Prefix'),'-',parameters('Global').Appname,'-',parameters('Environment'),parameters('DeploymentID'))]",
+
+    // subscriptionId
+    "subscriptionId": "[subscription().subscriptionId]",
+
+    "Domain": "[split(parameters('Global').DomainName,'.')[0]]",
+
+    // rgName
+    "resourceGroupName": "[resourceGroup().name]",
+
+    "OMSworkspaceName": "[replace(concat(variables('Deployment'),'OMSLogAnalytics'),'-','')]",
+    "OMSworkspaceID": "[resourceid('Microsoft.OperationalInsights/workspaces/',variables('OMSworkspaceName'))]",
+
+    "VNetID": "[resourceId(variables('subscriptionId'),variables('ResourceGroupName'), 'Microsoft.Network/VirtualNetworks', concat(Variables('Deployment'),'-vn'))]",
+
+    "networkId": "[concat(parameters('Global').networkid[0],string(sub(parameters('Global').networkid[1],int(parameters('DeploymentID')))))]",
+
+    "LBInfo": "[parameters('DeploymentInfo').LBInfo]"
+
+  },
+  "resources": [
+    {
+      "condition": "[contains(variables('LBInfo')[copyIndex(0)],'PublicIP')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2018-03-01",
+      "name": "[concat(variables('Deployment'),'-publicip-plb',variables('LBInfo')[copyIndex(0)].LBName)]",
+      "sku": {
+        "name": "[variables('LBInfo')[copyIndex()].Sku]"
+      },
+      "copy": {
+        "name": "PublicIPLoop",
+        "count": "[length( variables('LBInfo') )]"
+      },
+      "dependsOn": [],
+      "tags": {
+        "displayName": "ilb_Standard_PublicIP"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "[variables('LBInfo')[copyIndex(0)].PublicIP]",
+        "dnsSettings": {
+          "domainNameLabel": "[toLower( concat(variables('Domain'), variables('Deployment'), '-publicip-plb', variables('LBInfo')[copyIndex(0)].LBName ) ) ]"
+        }
+      },
+      "resources": [
+        {
+          "condition": "[contains(variables('LBInfo')[copyIndex(0)],'PublicIP')]",
+          "type": "providers/diagnosticSettings",
+          "name": "Microsoft.Insights/service",
+          "dependsOn": [
+            "[concat('Microsoft.Network/publicIPAddresses/',variables('Deployment'),'-publicip-plb',variables('LBInfo')[copyIndex(0)].LBName)]"
+          ],
+          "apiVersion": "2015-07-01",
+          "properties": {
+            "workspaceId": "[variables('OMSworkspaceID')]",
+            "logs": [
+              {
+                "category": "DDoSProtectionNotifications",
+                "enabled": true
+              }
+            ],
+            "metrics": [
+              {
+                "timeGrain": "PT5M",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": false,
+                  "days": 0
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "[concat(variables('Deployment'),'-lb',variables('LBInfo')[copyIndex()].LBName)]",
+      "type": "Microsoft.Network/loadBalancers",
+      "apiVersion": "2018-03-01",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "[variables('LBInfo')[copyIndex()].Sku]"
+      },
+      "dependsOn": [
+          "[concat('Microsoft.Network/publicIPAddresses/',variables('Deployment'),'-publicip-plb',variables('LBInfo')[copyIndex(0)].LBName)]"
+      ],
+      "copy": {
+        "name": "ilbLoop",
+        "count": "[length(variables('LBInfo'))]"
+      },
+      "tags": {
+        "displayName": "ILB_Deploy"
+      },
+      "properties": {
+        "backendAddressPools": [
+          {
+            "name": "[variables('LBInfo')[copyIndex()].ASName]"
+          }
+        ],
+        "copy": [
+          {
+            "name": "frontendIPConfigurations",
+            "count": "[length(variables('LBInfo')[copyIndex()].FrontEnd)]",
+            "input": {
+              "name": "[variables('LBInfo')[copyIndex()].FrontEnd[copyIndex('frontendIPConfigurations')].LBFEName]",
+              "properties": {
+                "privateIPAllocationMethod": "[if( equals(variables('LBInfo')[copyIndex()].FrontEnd[copyIndex('frontendIPConfigurations')].Type,'Private'), 'Static',json('null'))]",
+                "privateIPAddress": "[if( equals(variables('LBInfo')[copyIndex()].FrontEnd[copyIndex('frontendIPConfigurations')].Type,'Private'), concat(variables('networkId'),'.',variables('LBInfo')[copyIndex()].FrontEnd[copyIndex('frontendIPConfigurations')].LBFEIP),json('null'))]",
+                "subnet":          "[if( equals(variables('LBInfo')[copyIndex()].FrontEnd[copyIndex('frontendIPConfigurations')].Type,'Private'), json( concat('{\"id\":\"',concat(variables('VNetID'), '/subnets/sn', variables('LBInfo')[copyIndex()].FrontEnd[copyIndex('frontendIPConfigurations')].SNName) ,'\"}')), json('null'))]",
+                "publicIPAddress": "[if( equals(variables('LBInfo')[copyIndex()].FrontEnd[copyIndex('frontendIPConfigurations')].Type,'Private'), json('null'), json( concat('{\"id\":\"',string(resourceid('Microsoft.Network/publicIPAddresses',concat(variables('Deployment'),'-publicip-plb',variables('LBInfo')[copyIndex()].LBName))),'\"}')))]"
+              }
+            }
+          },
+          {
+            "name": "loadBalancingRules",
+            "count": "[length(variables('LBInfo')[copyIndex()].Services)]",
+            "input": {
+              "name": "[variables('LBInfo')[copyIndex()].Services[copyIndex('loadBalancingRules')].RuleName]",
+              "properties": {
+                "frontendIPConfiguration": {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers/',concat(variables('Deployment'),'-lb',variables('LBInfo')[copyIndex()].LBName)),'/frontendIPConfigurations/',variables('LBInfo')[copyIndex()].Services[copyIndex('loadBalancingRules')].LBFEName)]"
+                },
+                "backendAddressPool": {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers/',concat(variables('Deployment'),'-lb',variables('LBInfo')[copyIndex()].LBName)),'/backendAddressPools/',variables('LBInfo')[copyIndex()].ASName)]"
+                },
+                "probe": {
+                  "id": "[concat(resourceId('Microsoft.Network/loadBalancers/',concat(variables('Deployment'),'-lb',variables('LBInfo')[copyIndex()].LBName)),'/probes/',variables('LBInfo')[copyIndex()].Services[copyIndex('loadBalancingRules')].RuleName)]"
+                },
+                "protocol": "Tcp",
+                "frontendPort": "[variables('LBInfo')[copyIndex()].Services[copyIndex('loadBalancingRules')].LBFEPort]",
+                "backendPort": "[variables('LBInfo')[copyIndex()].Services[copyIndex('loadBalancingRules')].LBBEPort]",
+                "enableFloatingIP": "[variables('LBInfo')[copyIndex()].DirectReturn]"
+              }
+            }
+          },
+          {
+            "name": "probes",
+            "count": "[length(variables('LBInfo')[copyIndex()].Services)]",
+            "input": {
+              "name": "[variables('LBInfo')[copyIndex()].Services[copyIndex('probes')].RuleName]",
+              "properties": {
+                "protocol": "Tcp",
+                "port": "[variables('LBInfo')[copyIndex()].Services[copyIndex('probes')].LBBEProbePort]",
+                "intervalInSeconds": 5,
+                "numberOfProbes": 2
+              }
+            }
+          }
+        ]
+      },
+      "resources": [
+        {
+          "type": "providers/diagnosticSettings",
+          "name": "Microsoft.Insights/service",
+          "dependsOn": [
+            "[concat(variables('Deployment'),'-lb',variables('LBInfo')[copyIndex()].LBName)]"
+          ],
+          "apiVersion": "2015-07-01",
+          "properties": {
+            "workspaceId": "[variables('OMSworkspaceID')]",
+            "logs": [
+              {
+                "category": "LoadBalancerAlertEvent",
+                "enabled": true
+              },
+              {
+                "category": "LoadBalancerProbeHealthStatus",
+                "enabled": true
+              }
+            ],
+            "metrics": [
+              {
+                "timeGrain": "PT5M",
+                "enabled": true,
+                "retentionPolicy": {
+                  "enabled": false,
+                  "days": 0
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "outputs": {
+  }
+}
