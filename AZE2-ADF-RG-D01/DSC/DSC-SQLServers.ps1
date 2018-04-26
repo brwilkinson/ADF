@@ -8,7 +8,7 @@ Param ( 
     [Int]$RetryCount = 30,
     [Int]$RetryIntervalSec = 180,
     [String]$ThumbPrint,
-    [String]$StorageAccountId = '/subscriptions/b8f402aa-20f7-4888-b45c-3cf086dad9c3/resourceGroups/rgGlobal/providers/Microsoft.Storage/storageAccounts/saeastus2',
+    [String]$StorageAccountId,
     [String]$Deployment,
     [String]$NetworkID,
     [String]$AppInfo
