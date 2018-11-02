@@ -627,9 +627,9 @@ Node $AllNodes.Where{$env:computername -match $ClusterInfo.Primary}.NodeName
     
                 $_ | Set-NTFSOwner -Account BUILTIN\Administrators
                 $_ | Clear-NTFSAccess -DisableInheritance
-                $_ | Add-NTFSAccess -Account 'EVERYONE' -AccessRights ReadAndExecute -InheritanceFlags None -PropagationFlags NoPropagateInherit
-                $_ | Add-NTFSAccess -Account BUILTIN\Administrators -AccessRights FullControl -InheritanceFlags None -PropagationFlags NoPropagateInherit
-                $_ | Add-NTFSAccess -Account 'NT AUTHORITY\SYSTEM' -AccessRights FullControl -InheritanceFlags None -PropagationFlags NoPropagateInherit
+                $_ | Add-NTFSAccess -Account 'EVERYONE' -AccessRights FullControl -InheritanceFlags None -PropagationFlags InheritOnly
+                $_ | Add-NTFSAccess -Account BUILTIN\Administrators -AccessRights FullControl -InheritanceFlags None -PropagationFlags InheritOnly
+                $_ | Add-NTFSAccess -Account 'NT AUTHORITY\SYSTEM' -AccessRights FullControl -InheritanceFlags None -PropagationFlags InheritOnly
                 $_ | Get-NTFSAccess
             }
 
@@ -637,12 +637,12 @@ Node $AllNodes.Where{$env:computername -match $ClusterInfo.Primary}.NodeName
                 Write-Verbose $_.fullname -Verbose
                 $_ | Clear-NTFSAccess -DisableInheritance 
                 $_ | Set-NTFSOwner -Account BUILTIN\Administrators
-                $_ | Add-NTFSAccess -Account 'EVERYONE' -AccessRights ReadAndExecute -InheritanceFlags None -PropagationFlags NoPropagateInherit
-                $_ | Add-NTFSAccess -Account BUILTIN\Administrators -AccessRights FullControl -InheritanceFlags None -PropagationFlags NoPropagateInherit
-                $_ | Add-NTFSAccess -Account 'NT AUTHORITY\SYSTEM' -AccessRights FullControl -InheritanceFlags None -PropagationFlags NoPropagateInherit
-        
+                $_ | Add-NTFSAccess -Account 'EVERYONE' -AccessRights FullControl
+                $_ | Add-NTFSAccess -Account BUILTIN\Administrators -AccessRights FullControl
+                $_ | Add-NTFSAccess -Account 'NT AUTHORITY\SYSTEM' -AccessRights FullControl
+    
                 $_ | Get-NTFSAccess
-   
+
             }
         
         }
