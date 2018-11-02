@@ -635,7 +635,7 @@ Node $AllNodes.Where{$env:computername -match $ClusterInfo.Primary}.NodeName
 
             Get-Childitem -path 'C:\ProgramData\Microsoft\Crypto\RSA\MachineKeys'  | foreach {
                 Write-Verbose $_.fullname -Verbose
-                $_ | Clear-NTFSAccess -DisableInheritance 
+                #$_ | Clear-NTFSAccess -DisableInheritance 
                 $_ | Set-NTFSOwner -Account BUILTIN\Administrators
                 $_ | Add-NTFSAccess -Account 'EVERYONE' -AccessRights FullControl
                 $_ | Add-NTFSAccess -Account BUILTIN\Administrators -AccessRights FullControl
