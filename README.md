@@ -1,5 +1,9 @@
 # Azure Deployment Framework [ADF]
 
+# this project how now moved to an alternate REPO
+
+https://github.com/brwilkinson/AzureDeploymentFramework
+
 Azure Resource Group Deployment - MultiTier Application Environment
 
 	To Deploy all Tiers simply choose the following template
